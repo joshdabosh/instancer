@@ -20,5 +20,5 @@ const db = require("./db")
 db.init(INSTANCER_CONFIG.db_uri)
 
 app.listen(INSTANCER_CONFIG.port, () => {
-    console.log(`Instancer started on port ${INSTANCER_CONFIG.port}`)
+    console.log(`[instancer] started on port ${INSTANCER_CONFIG.port}`)
 });

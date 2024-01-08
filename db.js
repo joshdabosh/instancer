@@ -14,6 +14,8 @@ class DB {
             },
         });
         await this.db.migrate.latest();
+
+        console.log("[knex] applied migrations")
     }
 }
 
