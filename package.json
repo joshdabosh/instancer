@@ -1,0 +1,14 @@
+{
+  "name": "instancer",
+  "version": "0.1.0",
+  "description": "A backend API to automatically provision resources for CTF challenges",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "joshdabosh",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
