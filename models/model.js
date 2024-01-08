@@ -20,6 +20,7 @@ class Model {
 
     constructor(values) {
         const { valid, message } = this.validate(values)
+        this.db = require("../db").db
 
         if (valid) {
             Object.assign(this, values);
@@ -75,6 +76,77 @@ class Model {
 
         return {
             valid: true
+        }
+    }
+
+    async save() {
+        const dbObject = {}
+
+        for (const [
+            prop,
+            {
+                valid,
+                required
+            }
+        ] of Object.entries(this.constructor.properties)) {
+            if (required) {
+                if (this[prop] === undefined) {
+                    throw {
+                        success: false,
+                        message: {
+                            type: "ValidationError",
+                            reason: "MissingProperty",
+                            property: prop,
+                        }
+                    }
+                }
+
+                if (!valid(this[prop])) {
+                    throw {
+                        success: false,
+                        message: {
+                            type: "ValidationError",
+                            reason: "InvalidValue",
+                            property: prop,
+                            value: this[prop]
+                        }
+                    }
+                }
+
+                dbObject[prop] = this[prop]
+            } else {
+                if (this[prop] !== undefined) {
+                    if (!valid(this[prop])) {
+                        throw {
+                            success: false,
+                            message: {
+                                type: "ValidationError",
+                                reason: "InvalidValue",
+                                property: prop,
+                                value: this[prop]
+                            }
+                        }
+                    }
+
+                    dbObject[prop] = this[prop]
+                }
+            }
+        }
+
+        if (this.id === undefined || this.id === null) {
+            // create new object
+            dbObject = (
+                await this.db(this.constructor.tableName).insert(
+                    dbObject
+                )
+            )[0]
+
+            Object.assign(this, dbObject)
+        } else {
+            // update existing object
+            await this.db(this.constructor.tableName)
+                .where("id", this.id)
+                .update(dbObject);
         }
     }
 }

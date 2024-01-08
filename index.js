@@ -16,6 +16,8 @@ const INSTANCER_CONFIG = {
 app.use("/challenges", challengesRouter)
 app.use("/instances", instancesRouter)
 
+const Challenge = require("./models/challenge")
+
 const db = require("./db")
 db.init(INSTANCER_CONFIG.db_uri)
 
