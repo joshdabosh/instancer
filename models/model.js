@@ -1,31 +1,31 @@
 class Model {
     static get properties() {
         return {
-            "id": {
-                valid: (id) => typeof id === "number" && id >= 0
+            id: {
+                valid: (id) => typeof id === 'number' && id >= 0,
             },
-            "created": {
+            created: {
                 valid: (created) => created instanceof Date,
             },
-            "updated": {
+            updated: {
                 valid: (updated) => updated instanceof Date,
                 private: true,
-            }
-        };
+            },
+        }
     }
 
     static get db() {
-        return require("../db").db;
+        return require('../db').db
     }
 
     constructor(values) {
         const { valid, message } = this.validate(values)
-        this.db = require("../db").db
+        this.db = require('../db').db
 
         if (valid) {
-            Object.assign(this, values);
+            Object.assign(this, values)
         } else {
-            throw new Error(JSON.stringify(message));
+            throw new Error(JSON.stringify(message))
         }
     }
 
@@ -37,45 +37,45 @@ class Model {
                 return {
                     valid: false,
                     message: {
-                        type: "ValidationError",
-                        reason: "InvalidProperty",
-                        property: prop
-                    }
+                        type: 'ValidationError',
+                        reason: 'InvalidProperty',
+                        property: prop,
+                    },
                 }
             }
 
             // check the supplied value is valid for the property
-            if (!(this.constructor.properties[prop].valid(val))) {
+            if (!this.constructor.properties[prop].valid(val)) {
                 return {
                     valid: false,
                     message: {
-                        type: "ValidationError",
-                        reason: "InvalidValue",
+                        type: 'ValidationError',
+                        reason: 'InvalidValue',
                         property: prop,
-                        value: val
-                    }
+                        value: val,
+                    },
                 }
             }
         }
 
         // check all required properties are supplied
         for (const prop in this.constructor.properties) {
-            if (!this.constructor.properties[prop].required) continue;
+            if (!this.constructor.properties[prop].required) continue
 
             if (!values[prop]) {
                 return {
                     valid: false,
                     message: {
-                        type: "ValidationError",
-                        reason: "MissingProperty",
+                        type: 'ValidationError',
+                        reason: 'MissingProperty',
                         property: prop,
-                    }
+                    },
                 }
             }
         }
 
         return {
-            valid: true
+            valid: true,
         }
     }
 
@@ -83,25 +83,21 @@ class Model {
         let dbObject = {}
 
         if (this.updated !== undefined) {
-            this.updated = new Date();
+            this.updated = new Date()
         }
 
-        for (const [
-            prop,
-            {
-                valid,
-                required
-            }
-        ] of Object.entries(this.constructor.properties)) {
+        for (const [prop, { valid, required }] of Object.entries(
+            this.constructor.properties
+        )) {
             if (required) {
                 if (this[prop] === undefined) {
                     throw {
                         success: false,
                         message: {
-                            type: "ValidationError",
-                            reason: "MissingProperty",
+                            type: 'ValidationError',
+                            reason: 'MissingProperty',
                             property: prop,
-                        }
+                        },
                     }
                 }
 
@@ -109,11 +105,11 @@ class Model {
                     throw {
                         success: false,
                         message: {
-                            type: "ValidationError",
-                            reason: "InvalidValue",
+                            type: 'ValidationError',
+                            reason: 'InvalidValue',
                             property: prop,
-                            value: this[prop]
-                        }
+                            value: this[prop],
+                        },
                     }
                 }
 
@@ -124,11 +120,11 @@ class Model {
                         throw {
                             success: false,
                             message: {
-                                type: "ValidationError",
-                                reason: "InvalidValue",
+                                type: 'ValidationError',
+                                reason: 'InvalidValue',
                                 property: prop,
-                                value: this[prop]
-                            }
+                                value: this[prop],
+                            },
                         }
                     }
 
@@ -140,41 +136,36 @@ class Model {
         if (this.id === undefined || this.id === null) {
             // create new object
             dbObject = (
-                await this.db(this.constructor.tableName).insert(
-                    dbObject
-                )
+                await this.db(this.constructor.tableName).insert(dbObject)
             )[0]
 
             Object.assign(this, dbObject)
         } else {
             // update existing object
             await this.db(this.constructor.tableName)
-                .where("id", this.id)
-                .update(dbObject);
+                .where('id', this.id)
+                .update(dbObject)
         }
     }
 
     static async findOne(properties) {
-        const results = await this.db(this.tableName)
-            .where(properties)
-            .limit(1)
-        
+        const results = await this.db(this.tableName).where(properties).limit(1)
+
         if (results.length > 0) {
-            return new this(results[0]);
+            return new this(results[0])
         }
 
-        return null;
+        return null
     }
 
     static async find(properties) {
-        const results = await this.db(this.tableName)
-            .where(properties)
-        
-        return results.map(v => new this(v))
+        const results = await this.db(this.tableName).where(properties)
+
+        return results.map((v) => new this(v))
     }
 
     static async delete(properties) {
-        await this.db(this.tableName).where(properties).del();
+        await this.db(this.tableName).where(properties).del()
     }
 }
 

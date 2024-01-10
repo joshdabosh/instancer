@@ -1,124 +1,116 @@
-const express = require("express");
+const express = require('express')
 
-const { param, body, validationResult } = require("express-validator")
+const { param, body, validationResult } = require('express-validator')
 
-const Challenge = require("../models/challenge")
+const Challenge = require('../models/challenge')
 
-const router = express.Router();
+const router = express.Router()
 
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
     const result = await Challenge.find({})
 
     res.status(200).json(result)
 })
 
-router.get("/:id", 
-    [
-        param("id").isNumeric()
-    ],
-    async (req, res) => {
-        const requestOk = validationResult(req)
+router.get('/:id', [param('id').isNumeric()], async (req, res) => {
+    const requestOk = validationResult(req)
 
-        if (!requestOk.isEmpty()) {
-            res.status(400).json({
-                message: "invalid_values",
-                fields: requestOk.array()
-            })
-
-            return
-        }
-        
-        const result = await Challenge.findOne({
-            id: req.params.id
+    if (!requestOk.isEmpty()) {
+        res.status(400).json({
+            message: 'invalid_values',
+            fields: requestOk.array(),
         })
 
-        res.status(200).json(result)
+        return
     }
-);
 
-router.patch("/:id", 
+    const result = await Challenge.findOne({
+        id: req.params.id,
+    })
+
+    res.status(200).json(result)
+})
+
+router.patch(
+    '/:id',
     [
-        param("id").isNumeric(),
-        body("competition").isNumeric(),
-        body("image_uri").isString(),
-        body("yaml").isString()
+        param('id').isNumeric(),
+        body('competition').isNumeric(),
+        body('image_uri').isString(),
+        body('yaml').isString(),
     ],
     async (req, res) => {
         const requestOk = validationResult(req)
 
         if (!requestOk.isEmpty()) {
             res.status(400).json({
-                message: "invalid_values",
-                fields: requestOk.array()
+                message: 'invalid_values',
+                fields: requestOk.array(),
             })
 
             return
         }
-        
+
         const result = await Challenge.findOne({
-            id: req.params.id
+            id: req.params.id,
         })
 
         if (!result) {
             res.status(404).json({
-                message: "challenge_not_found"
-            })
-
-            return 
-        }
-
-        result.competition = req.body.competition;
-        result.image_uri = req.body.image_uri;
-        result.yaml = req.body.yaml;
-
-        try {
-            await result.save();
-            res.status(200).json(result)
-        } catch (e) {
-            res.status(400).json({
-                message: "invalid_values"
-            })
-        }        
-    }
-);
-
-router.delete("/:id", 
-    [
-        param("id").isNumeric()
-    ],
-    async (req, res) => {
-        const requestOk = validationResult(req)
-
-        if (!requestOk.isEmpty()) {
-            res.status(400).json({
-                message: "invalid_values",
-                fields: requestOk.array()
+                message: 'challenge_not_found',
             })
 
             return
         }
 
-        await Challenge.delete({
-            id: req.params.id
+        result.competition = req.body.competition
+        result.image_uri = req.body.image_uri
+        result.yaml = req.body.yaml
+
+        try {
+            await result.save()
+            res.status(200).json(result)
+        } catch (e) {
+            res.status(400).json({
+                message: 'invalid_values',
+            })
+        }
+    }
+)
+
+router.delete('/:id', [param('id').isNumeric()], async (req, res) => {
+    const requestOk = validationResult(req)
+
+    if (!requestOk.isEmpty()) {
+        res.status(400).json({
+            message: 'invalid_values',
+            fields: requestOk.array(),
         })
 
-        res.status(200).json({ message:"success" })
+        return
     }
-);
 
-router.post("/new",
+    await Challenge.delete({
+        id: req.params.id,
+    })
+
+    res.status(200).json({ message: 'success' })
+})
+
+router.post(
+    '/new',
     [
-        body("competition").isNumeric(),
-        body("image_uri").isString(),
-        body("yaml").isString()
+        body('competition').isNumeric(),
+        body('image_uri').isString(),
+        body('yaml').isString(),
     ],
     async (req, res) => {
         const requestOk = validationResult(req)
 
         if (!requestOk.isEmpty()) {
             res.status(400).json({
-                message: "invalid_values",
-                fields: requestOk.array()
+                message: 'invalid_values',
+                fields: requestOk.array(),
             })
 
             return
@@ -127,17 +119,15 @@ router.post("/new",
         const challenge = new Challenge({
             competition: req.body.competition,
             image_uri: req.body.image_uri,
-            yaml: req.body.yaml
+            yaml: req.body.yaml,
         })
 
         await challenge.save()
 
         res.status(201).json({
-            message:"success"
+            message: 'success',
         })
     }
-);
+)
 
-
-
-module.exports = router;
+module.exports = router

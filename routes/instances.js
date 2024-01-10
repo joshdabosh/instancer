@@ -1,30 +1,29 @@
-const express = require("express");
+const express = require('express')
 
-const router = express.Router();
+const router = express.Router()
 
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
     res.status(200).json({
-        message:"list_of_all_instances"
+        message: 'list_of_all_instances',
     })
-});
+})
 
-router.get("/:id", async (req, res) => {
+router.get('/:id', async (req, res) => {
     res.status(200).json({
-        message:"view_specific_instance"
+        message: 'view_specific_instance',
     })
-});
+})
 
-router.delete("/:id", async (req, res) => {
+router.delete('/:id', async (req, res) => {
     res.status(200).json({
-        message:"delete_specific_instance"
+        message: 'delete_specific_instance',
     })
-});
+})
 
-router.post("/new/:id", async (req, res) => {
+router.post('/new/:id', async (req, res) => {
     res.status(200).json({
-        message:"launch_new_instance"
+        message: 'launch_new_instance',
     })
-});
+})
 
-
-module.exports = router;
+module.exports = router
