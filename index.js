@@ -16,10 +16,23 @@ const INSTANCER_CONFIG = {
 app.use("/challenges", challengesRouter)
 app.use("/instances", instancesRouter)
 
-const Challenge = require("./models/challenge")
-
 const db = require("./db")
 db.init(INSTANCER_CONFIG.db_uri)
+
+
+const Challenge = require("./models/challenge")
+
+
+// const x = new Challenge({
+//     "competition":1,
+//     "image_uri":"a",
+//     "yaml":"a"
+// });
+
+// Challenge.find({
+// }).then(res => {
+//     console.log(res)
+// })
 
 app.listen(INSTANCER_CONFIG.port, () => {
     console.log(`[instancer] started on port ${INSTANCER_CONFIG.port}`)

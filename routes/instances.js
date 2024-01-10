@@ -20,6 +20,11 @@ router.delete("/:id", async (req, res) => {
     })
 });
 
+router.post("/new/:id", async (req, res) => {
+    res.status(200).json({
+        message:"launch_new_instance"
+    })
+});
 
 
 module.exports = router;

@@ -149,6 +149,25 @@ class Model {
                 .update(dbObject);
         }
     }
+
+    static async findOne(properties) {
+        const results = await this.db(this.tableName)
+            .where(properties)
+            .limit(1)
+        
+        if (results.length > 0) {
+            return new this(results[0]);
+        }
+
+        return null;
+    }
+
+    static async find(properties) {
+        const results = await this.db(this.tableName)
+            .where(properties)
+        
+        return results.map(v => new this(v))
+    }
 }
 
 module.exports = Model

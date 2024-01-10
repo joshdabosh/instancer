@@ -1,17 +1,26 @@
 const express = require("express");
 
+const Challenge = require("../models/challenge")
+
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-    res.status(200).json({
-        message:"list_of_all_challenges"
-    })
+    const result = await Challenge.find({})
+
+    res.status(200).json(result)
 });
 
 router.get("/:id", async (req, res) => {
-    res.status(200).json({
-        message:"view_specific_challenge"
+    if (!/^\d+$/.test(req.params.id)) {
+        res.status(200).json(null)
+        return;
+    }
+
+    const result = await Challenge.findOne({
+        id: req.params.id
     })
+
+    res.status(200).json(result)
 });
 
 router.delete("/:id", async (req, res) => {

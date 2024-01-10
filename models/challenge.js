@@ -6,15 +6,15 @@ class Challenge extends Model {
     static get properties() {
         return {
             ...super.properties,
-            "competition": {
+            competition: {
                 valid: (competition) => typeof competition === "number",
                 required: true  
             },
-            "image_uri": {
+            image_uri: {
                 valid: (image_uri) => typeof image_uri === "string",
                 required: true
             },
-            "yaml": {
+            yaml: {
                 valid: (yaml) => typeof yaml === "string",
                 required: true
             }
