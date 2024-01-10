@@ -80,7 +80,11 @@ class Model {
     }
 
     async save() {
-        const dbObject = {}
+        let dbObject = {}
+
+        if (this.updated !== undefined) {
+            this.updated = new Date();
+        }
 
         for (const [
             prop,

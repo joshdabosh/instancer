@@ -20,7 +20,7 @@ router.get("/:id",
         const requestOk = validationResult(req)
 
         if (!requestOk.isEmpty()) {
-            res.status(200).json({
+            res.status(400).json({
                 message: "invalid_values",
                 fields: requestOk.array()
             })
@@ -36,6 +36,52 @@ router.get("/:id",
     }
 );
 
+router.patch("/:id", 
+    [
+        param("id").isNumeric(),
+        body("competition").isNumeric(),
+        body("image_uri").isString(),
+        body("yaml").isString()
+    ],
+    async (req, res) => {
+        const requestOk = validationResult(req)
+
+        if (!requestOk.isEmpty()) {
+            res.status(400).json({
+                message: "invalid_values",
+                fields: requestOk.array()
+            })
+
+            return
+        }
+        
+        const result = await Challenge.findOne({
+            id: req.params.id
+        })
+
+        if (!result) {
+            res.status(404).json({
+                message: "challenge_not_found"
+            })
+
+            return 
+        }
+
+        result.competition = req.body.competition;
+        result.image_uri = req.body.image_uri;
+        result.yaml = req.body.yaml;
+
+        try {
+            await result.save();
+            res.status(200).json(result)
+        } catch (e) {
+            res.status(400).json({
+                message: "invalid_values"
+            })
+        }        
+    }
+);
+
 router.delete("/:id", 
     [
         param("id").isNumeric()
@@ -44,7 +90,7 @@ router.delete("/:id",
         const requestOk = validationResult(req)
 
         if (!requestOk.isEmpty()) {
-            res.status(200).json({
+            res.status(400).json({
                 message: "invalid_values",
                 fields: requestOk.array()
             })
@@ -70,7 +116,7 @@ router.post("/new",
         const requestOk = validationResult(req)
 
         if (!requestOk.isEmpty()) {
-            res.status(200).json({
+            res.status(400).json({
                 message: "invalid_values",
                 fields: requestOk.array()
             })
@@ -78,8 +124,16 @@ router.post("/new",
             return
         }
 
-        res.status(200).json({
-            message:"add_new_challenge_manifest"
+        const challenge = new Challenge({
+            competition: req.body.competition,
+            image_uri: req.body.image_uri,
+            yaml: req.body.yaml
+        })
+
+        await challenge.save()
+
+        res.status(201).json({
+            message:"success"
         })
     }
 );

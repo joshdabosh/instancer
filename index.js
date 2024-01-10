@@ -13,6 +13,8 @@ const INSTANCER_CONFIG = {
     port: process.env.PORT
 }
 
+app.use(express.json());
+
 app.use("/challenges", challengesRouter)
 app.use("/instances", instancesRouter)
 
