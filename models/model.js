@@ -168,6 +168,10 @@ class Model {
         
         return results.map(v => new this(v))
     }
+
+    static async delete(properties) {
+        await this.db(this.tableName).where(properties).del();
+    }
 }
 
 module.exports = Model
