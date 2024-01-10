@@ -1,4 +1,7 @@
 const express = require('express')
+const passport = require('passport')
+
+const verifyJwt = require('../verify-jwt')
 
 const { param, body, validationResult } = require('express-validator')
 
@@ -6,13 +9,19 @@ const Challenge = require('../models/challenge')
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
+router.get('/', verifyJwt, async (req, res) => {
+    if (!req.user.admin) {
+        res.status(403).json({
+            message: "unauthorized"
+        })
+    }
+    
     const result = await Challenge.find({})
 
     res.status(200).json(result)
 })
 
-router.get('/:id', [param('id').isNumeric()], async (req, res) => {
+router.get('/:id', verifyJwt, [param('id').isNumeric()], async (req, res) => {
     const requestOk = validationResult(req)
 
     if (!requestOk.isEmpty()) {
@@ -33,6 +42,7 @@ router.get('/:id', [param('id').isNumeric()], async (req, res) => {
 
 router.patch(
     '/:id',
+    verifyJwt,
     [
         param('id').isNumeric(),
         body('competition').isNumeric(),
@@ -78,7 +88,7 @@ router.patch(
     }
 )
 
-router.delete('/:id', [param('id').isNumeric()], async (req, res) => {
+router.delete('/:id', verifyJwt, [param('id').isNumeric()], async (req, res) => {
     const requestOk = validationResult(req)
 
     if (!requestOk.isEmpty()) {
@@ -99,6 +109,7 @@ router.delete('/:id', [param('id').isNumeric()], async (req, res) => {
 
 router.post(
     '/new',
+    verifyJwt,
     [
         body('competition').isNumeric(),
         body('image_uri').isString(),
