@@ -1,77 +1,50 @@
 const express = require('express')
 
-const verifyJwt = require('../verify-jwt')
+const { verifyAdminJwt, validateResults } = require('../middleware')
 
-const { param, body, validationResult } = require('express-validator')
+const { param, body } = require('express-validator')
 
 const Challenge = require('../models/challenge')
 
 const router = express.Router()
 
-router.get('/', verifyJwt, async (req, res) => {
+router.get('/', verifyAdminJwt, async (req, res) => {
     if (!req.user.admin) {
         res.status(403).json({
-            message: "unauthorized"
+            message: 'unauthorized',
         })
     }
-    
+
     const result = await Challenge.find({})
 
     res.status(200).json(result)
 })
 
-router.get('/:id', verifyJwt, [param('id').isNumeric()], async (req, res) => {
-    if (!req.user.admin) {
-        res.status(403).json({
-            message: "unauthorized"
-        })
-    }
-    
-    const requestOk = validationResult(req)
-
-    if (!requestOk.isEmpty()) {
-        res.status(400).json({
-            message: 'invalid_values',
-            fields: requestOk.array(),
+router.get(
+    '/:id',
+    verifyAdminJwt,
+    [param('id').isNumeric()],
+    validateResults,
+    async (req, res) => {
+        const result = await Challenge.findOne({
+            id: req.params.id,
         })
 
-        return
+        res.status(200).json(result)
     }
-
-    const result = await Challenge.findOne({
-        id: req.params.id,
-    })
-
-    res.status(200).json(result)
-})
+)
 
 router.patch(
     '/:id',
-    verifyJwt,
+    verifyAdminJwt,
     [
         param('id').isNumeric(),
         body('competition').isNumeric(),
         body('image_uri').isString(),
         body('yaml').isString(),
     ],
+    validateResults,
     async (req, res) => {
-        if (!req.user.admin) {
-            res.status(403).json({
-                message: "unauthorized"
-            })
-        }
-        
-        const requestOk = validationResult(req)
-
-        if (!requestOk.isEmpty()) {
-            res.status(400).json({
-                message: 'invalid_values',
-                fields: requestOk.array(),
-            })
-
-            return
-        }
-
         const result = await Challenge.findOne({
             id: req.params.id,
         })
@@ -99,57 +72,30 @@ router.patch(
     }
 )
 
-router.delete('/:id', verifyJwt, [param('id').isNumeric()], async (req, res) => {
-    if (!req.user.admin) {
-        res.status(403).json({
-            message: "unauthorized"
-        })
-    }
-
-    const requestOk = validationResult(req)
-
-    if (!requestOk.isEmpty()) {
-        res.status(400).json({
-            message: 'invalid_values',
-            fields: requestOk.array(),
+router.delete(
+    '/:id',
+    verifyAdminJwt,
+    [param('id').isNumeric()],
+    validateResults,
+    async (req, res) => {
+        await Challenge.delete({
+            id: req.params.id,
         })
 
-        return
+        res.status(200).json({ message: 'success' })
     }
-
-    await Challenge.delete({
-        id: req.params.id,
-    })
-
-    res.status(200).json({ message: 'success' })
-})
+)
 
 router.post(
     '/new',
-    verifyJwt,
+    verifyAdminJwt,
     [
         body('competition').isNumeric(),
         body('image_uri').isString(),
         body('yaml').isString(),
     ],
+    validateResults,
     async (req, res) => {
-        if (!req.user.admin) {
-            res.status(403).json({
-                message: "unauthorized"
-            })
-        }
-
-        const requestOk = validationResult(req)
-
-        if (!requestOk.isEmpty()) {
-            res.status(400).json({
-                message: 'invalid_values',
-                fields: requestOk.array(),
-            })
-
-            return
-        }
-
         const challenge = new Challenge({
             competition: req.body.competition,
             image_uri: req.body.image_uri,

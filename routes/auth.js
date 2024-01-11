@@ -1,5 +1,5 @@
 const express = require('express')
-const jwt = require("jsonwebtoken")
+const jwt = require('jsonwebtoken')
 
 const { body, validationResult } = require('express-validator')
 
@@ -30,7 +30,7 @@ router.post('/auth', [body('token').isString()], async (req, res) => {
     // check that the JWT is valid
     if (!authResult.ok) {
         res.status(403).json({
-            message: "unauthorized"
+            message: 'unauthorized',
         })
 
         return
@@ -42,13 +42,13 @@ router.post('/auth', [body('token').isString()], async (req, res) => {
         {
             admin: userData.user.admin,
             user_id: userData.user.id,
-            team_id: userData.user.team?.id
+            team_id: userData.user.team?.id,
         },
         req.jwt_secret
     )
 
     res.status(200).json({
-        token
+        token,
     })
 })
 

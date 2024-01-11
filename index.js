@@ -11,17 +11,15 @@ const authRouter = require('./routes/auth')
 const INSTANCER_CONFIG = {
     db_uri: process.env.DATABASE_URI,
     port: process.env.PORT,
-    jwt_secret: process.env.JWT_SECRET ?? crypto.randomBytes(32)
+    jwt_secret: process.env.JWT_SECRET ?? crypto.randomBytes(32),
 }
 
 app.use(express.json())
 
-app.use(
-    (req, res, next) => {
-        req.jwt_secret = INSTANCER_CONFIG.jwt_secret;
-        next();
-    }
-)
+app.use((req, res, next) => {
+    req.jwt_secret = INSTANCER_CONFIG.jwt_secret
+    next()
+})
 
 app.use('/', authRouter)
 
