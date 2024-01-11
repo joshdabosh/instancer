@@ -5,7 +5,7 @@ const crypto = require('crypto')
 const app = express()
 
 const challengesRouter = require('./routes/challenges')
-const instancesRouter = require('./routes/challenges')
+const instancesRouter = require('./routes/instances')
 const authRouter = require('./routes/auth')
 
 const INSTANCER_CONFIG = {

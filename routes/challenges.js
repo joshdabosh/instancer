@@ -1,5 +1,4 @@
 const express = require('express')
-const passport = require('passport')
 
 const verifyJwt = require('../verify-jwt')
 
@@ -22,6 +21,12 @@ router.get('/', verifyJwt, async (req, res) => {
 })
 
 router.get('/:id', verifyJwt, [param('id').isNumeric()], async (req, res) => {
+    if (!req.user.admin) {
+        res.status(403).json({
+            message: "unauthorized"
+        })
+    }
+    
     const requestOk = validationResult(req)
 
     if (!requestOk.isEmpty()) {
@@ -50,6 +55,12 @@ router.patch(
         body('yaml').isString(),
     ],
     async (req, res) => {
+        if (!req.user.admin) {
+            res.status(403).json({
+                message: "unauthorized"
+            })
+        }
+        
         const requestOk = validationResult(req)
 
         if (!requestOk.isEmpty()) {
@@ -89,6 +100,12 @@ router.patch(
 )
 
 router.delete('/:id', verifyJwt, [param('id').isNumeric()], async (req, res) => {
+    if (!req.user.admin) {
+        res.status(403).json({
+            message: "unauthorized"
+        })
+    }
+
     const requestOk = validationResult(req)
 
     if (!requestOk.isEmpty()) {
@@ -116,6 +133,12 @@ router.post(
         body('yaml').isString(),
     ],
     async (req, res) => {
+        if (!req.user.admin) {
+            res.status(403).json({
+                message: "unauthorized"
+            })
+        }
+
         const requestOk = validationResult(req)
 
         if (!requestOk.isEmpty()) {

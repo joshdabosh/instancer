@@ -23,9 +23,12 @@ class Instance extends Model {
                 valid: (host) => typeof host === 'string',
                 required: true,
             },
-            port: {
+            internal_port: {
                 valid: (port) => typeof port === 'number',
-                required: true,
+                required: true
+            },
+            exposed_port: {
+                valid: (port) => typeof port === 'number',
             },
         }
     }

@@ -3,7 +3,7 @@
  * @returns { Promise<void> }
  */
 exports.up = function (knex) {
-    return knex.schema.createTable('challenges', (t) => {
+    return knex.schema.createTable('challenges', t => {
         t.increments('id').unsigned().primary()
         t.timestamp('created').defaultTo(knex.fn.now())
         t.timestamp('updated').defaultTo(knex.fn.now())
