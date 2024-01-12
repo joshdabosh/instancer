@@ -8,11 +8,26 @@ const challengesRouter = require('./routes/challenges')
 const instancesRouter = require('./routes/instances')
 const authRouter = require('./routes/auth')
 
+const K8sManager = require('./kubernetes')
+
 const INSTANCER_CONFIG = {
     db_uri: process.env.DATABASE_URI,
     port: process.env.PORT,
-    jwt_secret: process.env.JWT_SECRET ?? crypto.randomBytes(32),
+    jwt_secret: process.env.JWT_SECRET,
+    gcpProjectId: process.env.GCP_PROJECT_ID,
+    gcpLocation: process.env.GCP_LOCATION,
+    gcpClusterName: process.env.GCP_CLUSTER_NAME
 }
+
+
+
+const manager = new K8sManager(
+    INSTANCER_CONFIG.gcpProjectId,
+    INSTANCER_CONFIG.gcpLocation,
+    INSTANCER_CONFIG.gcpClusterName
+)
+
+manager.initKubeConfig()
 
 app.use(express.json())
 
@@ -22,25 +37,12 @@ app.use((req, res, next) => {
 })
 
 app.use('/', authRouter)
-
 app.use('/challenges', challengesRouter)
 app.use('/instances', instancesRouter)
 
 const db = require('./db')
 db.init(INSTANCER_CONFIG.db_uri)
 
-const Challenge = require('./models/challenge')
-
-// const x = new Challenge({
-//     "competition":1,
-//     "image_uri":"a",
-//     "yaml":"a"
-// });
-
-// Challenge.find({
-// }).then(res => {
-//     console.log(res)
-// })
 
 app.listen(INSTANCER_CONFIG.port, () => {
     console.log(`[instancer] started on port ${INSTANCER_CONFIG.port}`)

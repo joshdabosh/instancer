@@ -14,17 +14,69 @@ router.get('/', async (req, res) => {
     res.status(200).json(await Instance.find({}))
 })
 
-router.get('/:id', async (req, res) => {
-    res.status(200).json({
-        message: 'view_specific_instance',
-    })
-})
+router.get(
+    '/:id',
+    verifyJwt,
+    [param('id').isNumeric()],
+    validateResults,
+    async (req, res) => {
+        const instance = await Instance.findOne({
+            id: req.params.id,
+        })
 
-router.delete('/:id', async (req, res) => {
-    res.status(200).json({
-        message: 'delete_specific_instance',
-    })
-})
+        if (!instance) {
+            res.status(404).json({
+                message: 'instance_not_found',
+            })
+
+            return
+        }
+
+        if (req.user.team_id !== instance.team_id) {
+            res.status(403).json({
+                message: 'unauthorized',
+            })
+
+            return
+        }
+
+        res.status(200).json(instance)
+    }
+)
+
+router.delete(
+    '/:id',
+    verifyJwt,
+    [param('id').isNumeric()],
+    validateResults,
+    async (req, res) => {
+        const instance = await Instance.findOne({
+            id: req.params.id,
+        })
+
+        if (!instance) {
+            res.status(404).json({
+                message: 'instance_not_found',
+            })
+
+            return
+        }
+
+        if (req.user.team_id !== instance.team_id) {
+            res.status(403).json({
+                message: 'unauthorized',
+            })
+
+            return
+        }
+
+        await Instance.delete({
+            id: instance.id,
+        })
+
+        res.status(204)
+    }
+)
 
 router.post(
     '/new/:challenge_id',

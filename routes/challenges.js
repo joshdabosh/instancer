@@ -34,7 +34,7 @@ router.get(
     }
 )
 
-router.patch(
+router.put(
     '/:id',
     verifyAdminJwt,
     [
@@ -82,7 +82,7 @@ router.delete(
             id: req.params.id,
         })
 
-        res.status(200).json({ message: 'success' })
+        res.status(204)
     }
 )
 
