@@ -30,6 +30,14 @@ class Instance extends Model {
             exposed_port: {
                 valid: (port) => typeof port === 'number',
             },
+            status: {
+                valid: (status) => typeof status === 'string' && (
+                    status === "starting" ||
+                    status === "running" ||
+                    status === "stopping" ||
+                    status === "stopped"
+                )
+            }
         }
     }
 }
