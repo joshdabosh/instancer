@@ -37,7 +37,7 @@ class K8sManager {
             image: `${challenge.image_uri}:latest`,
             env: kubeProps.env,
             ports: kubeProps.ports,
-            securityContext: kubeProps.securityContext,
+            securityContext: kubeProps.securityContext ?? false,
             resources: kubeProps.resources ?? {
                 limits: {
                     cpu: "500m",
@@ -56,6 +56,7 @@ class K8sManager {
 
         const coreApi = this.kc.makeApiClient(k8s.CoreV1Api)
         const appsApi = this.kc.makeApiClient(k8s.AppsV1Api)
+        const networkingApi = this.kc.makeApiClient(k8s.NetworkingV1Api)
 
         // check to make sure namespace does not exist already
         try {
@@ -167,11 +168,53 @@ class K8sManager {
             spec: serviceSpecObject
         }
 
-        const util = require('util')
-        console.log(util.inspect(serviceObject, false, null, true /* enable colors */))
-
         await coreApi.createNamespacedService(namespaceName, serviceObject)
-        
+
+
+        // create ingress for http challenges
+        const ingressName = `instancer-${challenge.name}-${teamId}-service`
+
+        const challengeHost = challenge.http[0]
+
+        const ingressObject = {
+            metadata: {
+                name: ingressName,
+                annotations: {
+                    'cert-manager.io/cluster-issuer': 'letsencrypt'
+                }
+            },
+            spec: {
+                ingressClassName: 'nginx',
+                tls: [
+                    {
+                        hosts: [challengeHost.subdomain]
+                    }
+                ],
+                rules: [
+                    {
+                        host: challengeHost.subdomain,
+                        http: {
+                            paths: [
+                                {
+                                    path: '/',
+                                    pathType: 'Prefix',
+                                    backend: {
+                                        service: {
+                                            name: serviceName,
+                                            port: {
+                                                number: challengeHost.port
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+
+        await networkingApi.createNamespacedIngress(namespaceName, ingressObject)
     }
 }
 
