@@ -26,7 +26,16 @@ class K8sManager {
         kc.addContext({ name: 'ctf', cluster: 'ctf', user: 'ctf' })
         kc.setCurrentContext('ctf')
 
-        this.kc = kc
+        const coreApi = kc.makeApiClient(k8s.CoreV1Api)
+        const appsApi = kc.makeApiClient(k8s.AppsV1Api)
+        const networkingApi = kc.makeApiClient(k8s.NetworkingV1Api)
+        
+        Object.assign(this, {
+            kc,
+            coreApi,
+            appsApi,
+            networkingApi
+        })
     }
 
     static configToContainer(challenge, containerConfig) {
@@ -51,48 +60,50 @@ class K8sManager {
         }
     }
 
-    async makeChallenge(challenge, teamId) {
-        const namespaceName = `instancer-${challenge.name}-${teamId}`
-
-        const coreApi = this.kc.makeApiClient(k8s.CoreV1Api)
-        const appsApi = this.kc.makeApiClient(k8s.AppsV1Api)
-        const networkingApi = this.kc.makeApiClient(k8s.NetworkingV1Api)
-
-        // check to make sure namespace does not exist already
+    async makeNamespace(namespaceName) {
         try {
-            await coreApi.readNamespace(namespaceName)
+            await this.coreApi.readNamespace(namespaceName)
 
-            return {
-                message: "instance_namespace_already_exists"
-            }
+            throw new Error(JSON.stringify({
+                message: "namespace_already_exists"
+            }))
         } catch (error) {
             if (error.statusCode != 404) {
                 throw error
             }
         }
 
-        const createNamespaceRes = await coreApi.createNamespace({
+        await this.coreApi.createNamespace({
             metadata: {
                 name: namespaceName
             }
         })
+    }
 
-        // create deployment for challenge
-        const deploymentName = `${namespaceName}-deploy`
+    async deleteNamespace(namespaceName) {
+        try {
+            await this.coreApi.deleteNamespace(namespaceName)
+        } catch (error) {
+            if (error.statusCode != 404) {
+                throw error
+            }
+        }
+    }
 
-        const namespacedDeploymentRes = await appsApi.listNamespacedDeployment(namespaceName)
+    async makeDeployment(challenge, names) {
+        const namespacedDeploymentRes = await this.appsApi.listNamespacedDeployment(names.namespaceName)
 
         for (const deployment of namespacedDeploymentRes.body.items) {
-            if (deployment.metadata?.name === deploymentName) {
-                return {
+            if (deployment.metadata?.name === names.deploymentName) {
+                throw new Error(JSON.stringify({
                     message: "instance_deployment_already_exists"
-                }
+                }))
             }
         }
 
         const deploymentObject = {
             metadata: {
-                name: deploymentName,
+                name: names.deploymentName,
                 labels: {
                     'chall-name': challenge.name
                 }
@@ -112,7 +123,7 @@ class K8sManager {
                     },
                     spec: {
                         enableServiceLinks: false,
-                        automount_service_account_token: false,
+                        automountServiceAccountToken: false,
                         containers: challenge.containers?.map(c => 
                             this.constructor.configToContainer(challenge, c)
                         )
@@ -121,9 +132,10 @@ class K8sManager {
             }
         }
 
-        await appsApi.createNamespacedDeployment(namespaceName, deploymentObject)
-        // console.log(deploymentObject)
+        await this.appsApi.createNamespacedDeployment(names.namespaceName, deploymentObject)
+    }
 
+    async makeService(challenge, names) {
         const serviceSpecObject = {
             selector: {
                 'chall-name': challenge.name
@@ -156,11 +168,9 @@ class K8sManager {
             serviceSpecObject.type = "ClusterIP"
         }
 
-        const serviceName = `instancer-${challenge.name}-${teamId}-service`
-
         const serviceObject = {
             metadata: {
-                name: serviceName,
+                name: names.serviceName,
                 labels: {
                     'chall-name': challenge.name
                 }
@@ -168,17 +178,16 @@ class K8sManager {
             spec: serviceSpecObject
         }
 
-        await coreApi.createNamespacedService(namespaceName, serviceObject)
+        await this.coreApi.createNamespacedService(names.namespaceName, serviceObject)
+    }
 
-
+    async makeIngress(challenge, names) {
         // create ingress for http challenges
-        const ingressName = `instancer-${challenge.name}-${teamId}-service`
-
         const challengeHost = challenge.http[0]
 
         const ingressObject = {
             metadata: {
-                name: ingressName,
+                name: names.ingressName,
                 annotations: {
                     'cert-manager.io/cluster-issuer': 'letsencrypt'
                 }
@@ -187,12 +196,12 @@ class K8sManager {
                 ingressClassName: 'nginx',
                 tls: [
                     {
-                        hosts: [challengeHost.subdomain]
+                        hosts: [challengeHost.hostname]
                     }
                 ],
                 rules: [
                     {
-                        host: challengeHost.subdomain,
+                        host: challengeHost.hostname,
                         http: {
                             paths: [
                                 {
@@ -200,7 +209,7 @@ class K8sManager {
                                     pathType: 'Prefix',
                                     backend: {
                                         service: {
-                                            name: serviceName,
+                                            name: names.serviceName,
                                             port: {
                                                 number: challengeHost.port
                                             }
@@ -214,7 +223,39 @@ class K8sManager {
             }
         }
 
-        await networkingApi.createNamespacedIngress(namespaceName, ingressObject)
+        await this.networkingApi.createNamespacedIngress(names.namespaceName, ingressObject)
+    }
+
+    getNames(challenge, teamId) {
+        const namespaceName = `instancer-${challenge.name}-${teamId}`
+        const deploymentName = `${namespaceName}-deploy`
+        const serviceName = `${namespaceName}-service`
+        const ingressName = `${namespaceName}-ingress`
+
+        return {
+            namespaceName,
+            deploymentName,
+            serviceName,
+            ingressName
+        }
+    }
+
+    async makeChallenge(challenge, teamId) {
+        const instanceNames = this.getNames(challenge, teamId)
+
+        await this.makeNamespace(instanceNames.namespaceName)
+        
+        await this.makeDeployment(challenge, instanceNames)
+
+        await this.makeService(challenge, instanceNames)
+
+        await this.makeIngress(challenge, instanceNames)
+    }
+
+    async deleteChallenge(challenge, teamId) {
+        const { namespaceName } = this.getNames(challenge, teamId)
+
+        await this.deleteNamespace(namespaceName)
     }
 }
 
