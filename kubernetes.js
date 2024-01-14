@@ -37,7 +37,7 @@ class K8sManager {
             image: `${challenge.image_uri}:latest`,
             env: kubeProps.env,
             ports: kubeProps.ports,
-            security_context: kubeProps.securityContext,
+            securityContext: kubeProps.securityContext,
             resources: kubeProps.resources ?? {
                 limits: {
                     cpu: "500m",
@@ -123,9 +123,55 @@ class K8sManager {
         await appsApi.createNamespacedDeployment(namespaceName, deploymentObject)
         // console.log(deploymentObject)
 
-        const util = require('util')
-        console.log(util.inspect(deploymentObject, false, null, true /* enable colors */))
+        const serviceSpecObject = {
+            selector: {
+                'chall-name': challenge.name
+            }
+        }
 
+        if (challenge.expose) {
+            // only support 1 port mapping currently
+            const fromPort = challenge.expose[0].from
+            const toPort = challenge.expose[0].to
+
+            serviceSpecObject.ports = [
+                {
+                    port: fromPort,
+                    nodePort: toPort,
+                    targetPort: fromPort
+                }
+            ]
+
+            serviceSpecObject.type = "NodePort"
+
+        } else if (challenge.http) {
+            serviceSpecObject.ports = [
+                {
+                    port: challenge.http[0].port,
+                    targetPort: challenge.http[0].port
+                }
+            ]
+
+            serviceSpecObject.type = "ClusterIP"
+        }
+
+        const serviceName = `instancer-${challenge.name}-${teamId}-service`
+
+        const serviceObject = {
+            metadata: {
+                name: serviceName,
+                labels: {
+                    'chall-name': challenge.name
+                }
+            },
+            spec: serviceSpecObject
+        }
+
+        const util = require('util')
+        console.log(util.inspect(serviceObject, false, null, true /* enable colors */))
+
+        await coreApi.createNamespacedService(namespaceName, serviceObject)
+        
     }
 }
 

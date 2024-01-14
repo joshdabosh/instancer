@@ -4,7 +4,8 @@
  */
 exports.up = function(knex) {
     return knex.schema.table('instances', (t) => {
-        t.text('status').notNullable().defaultTo('stopped')
+        t.dropColumn('internal_port')
+        t.dropColumn('deployment_type')
     })
 };
 
