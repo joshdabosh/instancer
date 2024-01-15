@@ -43,6 +43,7 @@ router.post('/auth', [body('token').isString()], async (req, res) => {
             admin: userData.user.admin,
             user_id: userData.user.id,
             team_id: userData.user.team?.id,
+            competition_id: userData.competition?.id ?? -1,
         },
         req.jwt_secret
     )

@@ -14,30 +14,18 @@ class Instance extends Model {
                 valid: (team_id) => typeof team_id === 'number',
                 required: true,
             },
-            deployment_type: {
-                valid: (deployment_type) =>
-                    deployment_type === 'http' || deployment_type === 'nc',
-                required: true,
-            },
-            subdomain: {
+            host: {
                 valid: (host) => typeof host === 'string',
                 required: true,
             },
-            internal_port: {
-                valid: (port) => typeof port === 'number',
-                required: true,
-            },
-            exposed_port: {
-                valid: (port) => typeof port === 'number',
-            },
             status: {
-                valid: (status) => typeof status === 'string' && (
-                    status === "starting" ||
-                    status === "running" ||
-                    status === "stopping" ||
-                    status === "stopped"
-                )
-            }
+                valid: (status) =>
+                    typeof status === 'string' &&
+                    (status === 'starting' ||
+                        status === 'running' ||
+                        status === 'stopping' ||
+                        status === 'stopped'),
+            },
         }
     }
 }

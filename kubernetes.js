@@ -3,16 +3,21 @@ const googleAuth = require('google-auth-library').auth
 const k8s = require('@kubernetes/client-node')
 const { ClusterManagerClient } = require('@google-cloud/container')
 
-
 class K8sManager {
-    constructor(projectId, location, clusterName) {
+    constructor() {
+        this.gcpProjectId = null
+        this.gcpLocation = null
+        this.clusterName = null
+    }
+
+    async initKubeConfig(projectId, location, clusterName) {
         this.gcpProjectId = projectId
         this.gcpLocation = location
         this.clusterName = clusterName
-    }
 
-    async initKubeConfig() {
-        const clusterManager = new ClusterManagerClient({ authClient: googleAuth })
+        const clusterManager = new ClusterManagerClient({
+            authClient: googleAuth,
+        })
         const [cluster] = await clusterManager.getCluster({
             name: `projects/${this.gcpProjectId}/locations/${this.gcpLocation}/clusters/${this.clusterName}`,
         })
@@ -29,17 +34,17 @@ class K8sManager {
         const coreApi = kc.makeApiClient(k8s.CoreV1Api)
         const appsApi = kc.makeApiClient(k8s.AppsV1Api)
         const networkingApi = kc.makeApiClient(k8s.NetworkingV1Api)
-        
+
         Object.assign(this, {
             kc,
             coreApi,
             appsApi,
-            networkingApi
+            networkingApi,
         })
     }
 
     static configToContainer(challenge, containerConfig) {
-        const kubeProps = containerConfig.kube;
+        const kubeProps = containerConfig.kube
 
         return {
             name: `${challenge.name}-${containerConfig.name}`,
@@ -49,14 +54,14 @@ class K8sManager {
             securityContext: kubeProps.securityContext ?? false,
             resources: kubeProps.resources ?? {
                 limits: {
-                    cpu: "500m",
-                    memory: "512Mi"
+                    cpu: '500m',
+                    memory: '512Mi',
                 },
                 requests: {
-                    cpu: "50m",
-                    memory: "64Mi"
-                }
-            }
+                    cpu: '50m',
+                    memory: '64Mi',
+                },
+            },
         }
     }
 
@@ -64,9 +69,11 @@ class K8sManager {
         try {
             await this.coreApi.readNamespace(namespaceName)
 
-            throw new Error(JSON.stringify({
-                message: "namespace_already_exists"
-            }))
+            throw new Error(
+                JSON.stringify({
+                    message: 'namespace_already_exists',
+                })
+            )
         } catch (error) {
             if (error.statusCode != 404) {
                 throw error
@@ -75,8 +82,8 @@ class K8sManager {
 
         await this.coreApi.createNamespace({
             metadata: {
-                name: namespaceName
-            }
+                name: namespaceName,
+            },
         })
     }
 
@@ -91,13 +98,16 @@ class K8sManager {
     }
 
     async makeDeployment(challenge, names) {
-        const namespacedDeploymentRes = await this.appsApi.listNamespacedDeployment(names.namespaceName)
+        const namespacedDeploymentRes =
+            await this.appsApi.listNamespacedDeployment(names.namespaceName)
 
         for (const deployment of namespacedDeploymentRes.body.items) {
             if (deployment.metadata?.name === names.deploymentName) {
-                throw new Error(JSON.stringify({
-                    message: "instance_deployment_already_exists"
-                }))
+                throw new Error(
+                    JSON.stringify({
+                        message: 'instance_deployment_already_exists',
+                    })
+                )
             }
         }
 
@@ -105,103 +115,85 @@ class K8sManager {
             metadata: {
                 name: names.deploymentName,
                 labels: {
-                    'chall-name': challenge.name
-                }
+                    'chall-name': challenge.name,
+                },
             },
             spec: {
                 selector: {
                     matchLabels: {
-                        'chall-name': challenge.name
-                    }
+                        'chall-name': challenge.name,
+                    },
                 },
                 replicas: challenge.replicas ?? 1,
                 template: {
                     metadata: {
                         labels: {
                             'chall-name': challenge.name,
-                        }
+                        },
                     },
                     spec: {
                         enableServiceLinks: false,
                         automountServiceAccountToken: false,
-                        containers: challenge.containers?.map(c => 
+                        containers: challenge.containers?.map((c) =>
                             this.constructor.configToContainer(challenge, c)
-                        )
-                    }
-                }
-            }
+                        ),
+                    },
+                },
+            },
         }
 
-        await this.appsApi.createNamespacedDeployment(names.namespaceName, deploymentObject)
+        await this.appsApi.createNamespacedDeployment(
+            names.namespaceName,
+            deploymentObject
+        )
     }
 
     async makeService(challenge, names) {
-        const serviceSpecObject = {
-            selector: {
-                'chall-name': challenge.name
-            }
-        }
-
-        if (challenge.expose) {
-            // only support 1 port mapping currently
-            const fromPort = challenge.expose[0].from
-            const toPort = challenge.expose[0].to
-
-            serviceSpecObject.ports = [
-                {
-                    port: fromPort,
-                    nodePort: toPort,
-                    targetPort: fromPort
-                }
-            ]
-
-            serviceSpecObject.type = "NodePort"
-
-        } else if (challenge.http) {
-            serviceSpecObject.ports = [
-                {
-                    port: challenge.http[0].port,
-                    targetPort: challenge.http[0].port
-                }
-            ]
-
-            serviceSpecObject.type = "ClusterIP"
-        }
-
         const serviceObject = {
             metadata: {
                 name: names.serviceName,
                 labels: {
-                    'chall-name': challenge.name
-                }
+                    'chall-name': challenge.name,
+                },
             },
-            spec: serviceSpecObject
+            spec: {
+                selector: {
+                    'chall-name': challenge.name,
+                },
+                ports: [
+                    {
+                        port: challenge.http.port,
+                        targetPort: challenge.http.port,
+                    },
+                ],
+                type: 'ClusterIP',
+            },
         }
 
-        await this.coreApi.createNamespacedService(names.namespaceName, serviceObject)
+        await this.coreApi.createNamespacedService(
+            names.namespaceName,
+            serviceObject
+        )
     }
 
     async makeIngress(challenge, names) {
-        // create ingress for http challenges
-        const challengeHost = challenge.http[0]
-
         const ingressObject = {
             metadata: {
                 name: names.ingressName,
                 annotations: {
-                    'cert-manager.io/cluster-issuer': 'letsencrypt'
-                }
+                    'cert-manager.io/cluster-issuer': 'letsencrypt',
+                },
             },
             spec: {
                 ingressClassName: 'nginx',
                 tls: [
                     {
-                        hosts: [challengeHost.hostname]
-                    }
+                        hosts: [challenge.http.hostname],
+                    },
                 ],
                 rules: [
                     {
-                        host: challengeHost.hostname,
+                        host: challenge.http.hostname,
                         http: {
                             paths: [
                                 {
@@ -211,19 +203,22 @@ class K8sManager {
                                         service: {
                                             name: names.serviceName,
                                             port: {
-                                                number: challengeHost.port
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                ]
-            }
+                                                number: challenge.http.port,
+                                            },
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
         }
 
-        await this.networkingApi.createNamespacedIngress(names.namespaceName, ingressObject)
+        await this.networkingApi.createNamespacedIngress(
+            names.namespaceName,
+            ingressObject
+        )
     }
 
     getNames(challenge, teamId) {
@@ -236,15 +231,19 @@ class K8sManager {
             namespaceName,
             deploymentName,
             serviceName,
-            ingressName
+            ingressName,
         }
     }
 
     async makeChallenge(challenge, teamId) {
+        if (!this.kc) {
+            await this.initKubeConfig()
+        }
+
         const instanceNames = this.getNames(challenge, teamId)
 
         await this.makeNamespace(instanceNames.namespaceName)
-        
+
         await this.makeDeployment(challenge, instanceNames)
 
         await this.makeService(challenge, instanceNames)
@@ -253,10 +252,14 @@ class K8sManager {
     }
 
     async deleteChallenge(challenge, teamId) {
+        if (!this.kc) {
+            await this.initKubeConfig()
+        }
+
         const { namespaceName } = this.getNames(challenge, teamId)
 
         await this.deleteNamespace(namespaceName)
     }
 }
 
-module.exports = K8sManager
+module.exports = new K8sManager()

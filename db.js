@@ -13,9 +13,8 @@ class DB {
                 directory: path.join(__dirname, '/migrations'),
             },
         })
-        await this.db.migrate.latest()
 
-        console.log('[knex] applied migrations')
+        await this.db.migrate.latest()
     }
 }
 

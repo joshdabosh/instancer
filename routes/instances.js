@@ -1,5 +1,6 @@
 const express = require('express')
 const { param } = require('express-validator')
+const crypto = require('crypto')
 
 const yaml = require('js-yaml')
 
@@ -7,6 +8,8 @@ const { verifyJwt, validateResults } = require('../middleware')
 
 const Challenge = require('../models/challenge')
 const Instance = require('../models/instance')
+
+const k8sManager = require('../kubernetes')
 
 const router = express.Router()
 
@@ -112,6 +115,7 @@ router.post(
         // check if requested challenge information exists
         const challengeToLaunch = await Challenge.findOne({
             id: req.params.challenge_id,
+            competition: req.user.competition_id,
         })
 
         if (!challengeToLaunch) {
@@ -134,47 +138,37 @@ router.post(
             return
         }
 
-        let newInstance
+        // assign fields needed by kubernetes manager
+        challengeYaml.image_uri = challengeToLaunch.image_uri
+        challengeYaml.http.hostname = `${challengeYaml.name}-${
+            req.user.team_id
+        }-${crypto.randomBytes(8).toString('hex')}.web.actf.co`
 
-        if (challengeYaml.expose) {
-            // TODO: we need to generate a random port
-            // to ensure that we don't overlap deployments
+        // we are deploying a web challenge
+        const newInstance = new Instance({
+            challenge_id: challengeToLaunch.id,
+            team_id: req.user.team_id,
+            host: challengeYaml.http.hostname,
+            status: 'starting',
+        })
 
-            // also, we have to figure out a strategy if
-            // we cannot find a port (in the case most are taken, etc)
+        try {
+            await k8sManager.makeChallenge(challengeYaml, newInstance.team_id)
 
-            // we are deploying a challenge for netcat
-            newInstance = new Instance({
-                challenge_id: challengeToLaunch.id,
-                team_id: req.user.team_id,
-                deployment_type: 'nc',
-                subdomain: 'instancer',
-                internal_port: challengeYaml.expose[0].from,
-                exposed_port: 1,
-            })
-        } else if (challengeYaml.http) {
-            // we need to generate a new subdomain
-
-            // we are deploying a web challenge
-            newInstance = new Instance({
-                challenge_id: challengeToLaunch.id,
-                team_id: req.user.team_id,
-                deployment_type: 'http',
-                subdomain: challengeYaml.http.subdomain,
-                internal_port: challengeYaml.http.port,
-            })
-        } else {
+            await newInstance.save()
+        } catch (error) {
             res.status(500).json({
-                message: 'invalid_challenge_deployment',
+                error: error.message,
             })
 
             return
         }
 
-        await newInstance.save()
-
         res.status(200).json({
-            message: 'launch_new_instance',
+            message: 'success',
+            details: {
+                instance: challengeYaml.http.hostname,
+            },
         })
     }
 )
