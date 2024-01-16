@@ -1,5 +1,5 @@
 const express = require('express')
-const { param } = require('express-validator')
+const { param, body } = require('express-validator')
 const crypto = require('crypto')
 
 const yaml = require('js-yaml')
@@ -73,18 +73,34 @@ router.delete(
             return
         }
 
-        await Instance.delete({
-            id: instance.id,
+        const challenge = await Challenge.findOne({
+            id: instance.challenge_id,
         })
 
-        res.status(204)
+        try {
+            const challengeYaml = yaml.load(challenge.yaml)
+
+            await Instance.delete({
+                id: instance.id,
+            })
+
+            await k8sManager.deleteChallenge(challengeYaml, req.user.team_id)
+        } catch (error) {
+            console.error(error)
+
+            res.status(500).json({ error })
+
+            return
+        }
+
+        res.status(204).send()
     }
 )
 
 router.post(
-    '/new/:challenge_id',
+    '/new',
     verifyJwt,
-    [param('challenge_id').isNumeric()],
+    [body('challenge_id').isNumeric()],
     validateResults,
     async (req, res) => {
         // check user is on a team
@@ -99,7 +115,7 @@ router.post(
         // check if team already has a running instance
         // and give the details back if it exists
         const runningInstance = await Instance.findOne({
-            challenge_id: req.params.challenge_id,
+            challenge_id: req.body.challenge_id,
             team_id: req.user.team_id,
         })
 
@@ -114,7 +130,7 @@ router.post(
 
         // check if requested challenge information exists
         const challengeToLaunch = await Challenge.findOne({
-            id: req.params.challenge_id,
+            id: req.body.challenge_id,
             competition: req.user.competition_id,
         })
 
@@ -130,7 +146,9 @@ router.post(
 
         try {
             challengeYaml = yaml.load(challengeToLaunch.yaml)
-        } catch (e) {
+        } catch (error) {
+            console.error(error)
+
             res.status(500).json({
                 message: 'invalid_challenge_yaml',
             })
@@ -144,22 +162,25 @@ router.post(
             req.user.team_id
         }-${crypto.randomBytes(8).toString('hex')}.web.actf.co`
 
-        // we are deploying a web challenge
-        const newInstance = new Instance({
-            challenge_id: challengeToLaunch.id,
-            team_id: req.user.team_id,
-            host: challengeYaml.http.hostname,
-            status: 'starting',
-        })
-
         try {
+            // we are deploying a web challenge
+            const newInstance = new Instance({
+                challenge_id: challengeToLaunch.id,
+                team_id: req.user.team_id,
+                host: challengeYaml.http.hostname,
+                status: 'running',
+            })
+
             await k8sManager.makeChallenge(challengeYaml, newInstance.team_id)
 
             await newInstance.save()
         } catch (error) {
-            res.status(500).json({
-                error: error.message,
-            })
+            console.error(error)
+
+            // something failed, clean up after ourselves in the cluster
+            await k8sManager.deleteChallenge(challengeYaml, req.user.team_id)
+
+            res.status(500).json({ error })
 
             return
         }
@@ -170,6 +191,41 @@ router.post(
                 instance: challengeYaml.http.hostname,
             },
         })
+    }
+)
+
+router.patch(
+    '/renew/',
+    verifyJwt,
+    [body('id').isNumeric()],
+    validateResults,
+    async (req, res) => {
+        if (!req.user.team_id) {
+            res.status(403).json({
+                message: 'user_not_on_team',
+            })
+
+            return
+        }
+
+        const runningInstance = await Instance.findOne({
+            challenge_id: req.body.id,
+            team_id: req.user.team_id,
+        })
+
+        runningInstance.updated = new Date()
+
+        try {
+            await runningInstance.save()
+        } catch (error) {
+            console.error(error)
+
+            res.status(500).json({ error })
+
+            return
+        }
+
+        res.status(204).send()
     }
 )
 

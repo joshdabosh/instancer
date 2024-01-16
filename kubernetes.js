@@ -69,11 +69,9 @@ class K8sManager {
         try {
             await this.coreApi.readNamespace(namespaceName)
 
-            throw new Error(
-                JSON.stringify({
-                    message: 'namespace_already_exists',
-                })
-            )
+            throw {
+                message: 'namespace_already_exists',
+            }
         } catch (error) {
             if (error.statusCode != 404) {
                 throw error
@@ -103,11 +101,9 @@ class K8sManager {
 
         for (const deployment of namespacedDeploymentRes.body.items) {
             if (deployment.metadata?.name === names.deploymentName) {
-                throw new Error(
-                    JSON.stringify({
-                        message: 'instance_deployment_already_exists',
-                    })
-                )
+                throw {
+                    message: 'instance_deployment_already_exists',
+                }
             }
         }
 

@@ -25,7 +25,7 @@ class Model {
         if (valid) {
             Object.assign(this, values)
         } else {
-            throw new Error(JSON.stringify(message))
+            throw message
         }
     }
 
