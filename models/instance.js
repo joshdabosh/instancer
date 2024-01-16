@@ -28,6 +28,14 @@ class Instance extends Model {
             },
         }
     }
+
+    static async findStartedBefore(time) {
+        const res = await this.db
+            .table(this.tableName)
+            .where('updated', '<', new Date(time))
+
+        return res.map((i) => new this(i))
+    }
 }
 
 module.exports = Instance
