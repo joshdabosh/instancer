@@ -3,18 +3,16 @@ const googleAuth = require('google-auth-library').auth
 const k8s = require('@kubernetes/client-node')
 const { ClusterManagerClient } = require('@google-cloud/container')
 
+const INSTANCER_CONFIG = require('./config')
+
 class K8sManager {
     constructor() {
-        this.gcpProjectId = null
-        this.gcpLocation = null
-        this.clusterName = null
+        this.gcpProjectId = INSTANCER_CONFIG.gcpProjectId
+        this.gcpLocation = INSTANCER_CONFIG.gcpLocation
+        this.clusterName = INSTANCER_CONFIG.gcpClusterName
     }
 
-    async initKubeConfig(projectId, location, clusterName) {
-        this.gcpProjectId = projectId
-        this.gcpLocation = location
-        this.clusterName = clusterName
-
+    async initKubeConfig() {
         const clusterManager = new ClusterManagerClient({
             authClient: googleAuth,
         })

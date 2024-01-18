@@ -6,7 +6,9 @@ const yaml = require('js-yaml')
 const Instance = require('../models/instance')
 const Challenge = require('../models/challenge')
 
-module.exports = async (instanceLifetime) => {
+const { instanceLifetime } = require('../config')
+
+module.exports = async () => {
     const resultObj = await Instance.findStartedBefore(
         new Date() - instanceLifetime
     )
