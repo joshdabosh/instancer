@@ -8,6 +8,7 @@ const {
     verifyJwt,
     validateResults,
     ratelimitedAuthRequest,
+    verifyAdminJwt,
 } = require('../middleware')
 
 const Challenge = require('../models/challenge')
@@ -17,7 +18,7 @@ const k8sManager = require('../kubernetes')
 
 const router = express.Router()
 
-router.get('/', verifyJwt, ratelimitedAuthRequest, async (req, res) => {
+router.get('/', verifyAdminJwt, async (req, res) => {
     res.status(200).json(await Instance.find({}))
 })
 
@@ -56,6 +57,7 @@ router.delete(
     verifyJwt,
     [param('id').isNumeric()],
     validateResults,
+    ratelimitedAuthRequest,
     async (req, res) => {
         const instance = await Instance.findOne({
             id: req.params.id,
@@ -106,6 +108,7 @@ router.post(
     verifyJwt,
     [body('challenge_id').isNumeric()],
     validateResults,
+    ratelimitedAuthRequest,
     async (req, res) => {
         // check user is on a team
         if (!req.user.team_id) {
@@ -203,6 +206,7 @@ router.patch(
     verifyJwt,
     [body('id').isNumeric()],
     validateResults,
+    ratelimitedAuthRequest,
     async (req, res) => {
         if (!req.user.team_id) {
             res.status(403).json({

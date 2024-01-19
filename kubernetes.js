@@ -16,10 +16,13 @@ class K8sManager {
         const clusterManager = new ClusterManagerClient({
             authClient: googleAuth,
         })
+
         const [cluster] = await clusterManager.getCluster({
             name: `projects/${this.gcpProjectId}/locations/${this.gcpLocation}/clusters/${this.clusterName}`,
         })
+
         const kc = new k8s.KubeConfig()
+        
         kc.addCluster({
             name: 'ctf',
             caData: cluster.masterAuth.clusterCaCertificate,

@@ -5,7 +5,7 @@ const INSTANCER_CONFIG = {
     db_uri: process.env.DATABASE_URI,
     redis_uri: process.env.REDIS_URI,
     ratelimit_token_cap: process.env.RL_TOKEN_CAP ?? 30,
-    ratelimit_token_add: process.env.RL_TOKEN_ADD ?? 10,
+    ratelimit_token_add: process.env.RL_TOKEN_ADD ?? 15,
     port: process.env.PORT,
     jwt_secret: process.env.JWT_SECRET,
     gcpProjectId: process.env.GCP_PROJECT_ID,
