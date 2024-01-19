@@ -22,7 +22,7 @@ class K8sManager {
         })
 
         const kc = new k8s.KubeConfig()
-        
+
         kc.addCluster({
             name: 'ctf',
             caData: cluster.masterAuth.clusterCaCertificate,
