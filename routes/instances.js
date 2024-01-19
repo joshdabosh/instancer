@@ -4,7 +4,11 @@ const crypto = require('crypto')
 
 const yaml = require('js-yaml')
 
-const { verifyJwt, validateResults } = require('../middleware')
+const {
+    verifyJwt,
+    validateResults,
+    ratelimitedAuthRequest,
+} = require('../middleware')
 
 const Challenge = require('../models/challenge')
 const Instance = require('../models/instance')
@@ -13,7 +17,7 @@ const k8sManager = require('../kubernetes')
 
 const router = express.Router()
 
-router.get('/', async (req, res) => {
+router.get('/', verifyJwt, ratelimitedAuthRequest, async (req, res) => {
     res.status(200).json(await Instance.find({}))
 })
 

@@ -35,6 +35,13 @@ db.init(INSTANCER_CONFIG.db_uri)
         setInterval(cleanup, INSTANCER_CONFIG.cleanupInterval * 1000)
     })
 
+if (INSTANCER_CONFIG.redis_uri) {
+    const redisManager = require('./redis-manager')
+    redisManager.initClient(INSTANCER_CONFIG.redis_uri).then(() => {
+        console.log('[redis] connected')
+    })
+}
+
 const k8sManager = require('./kubernetes')
 k8sManager.initKubeConfig().then(() => {
     console.log('[k8s] initialized clients')
