@@ -3,7 +3,8 @@ const process = require('process')
 
 const INSTANCER_CONFIG = {
     db_uri: process.env.DATABASE_URI,
-    redis_uri: process.env.REDIS_URI,
+    oracle_url: process.env.ORACLE_URL,
+    redis_uri: process.env.REDIS_URI ?? '',
     ratelimit_token_cap: process.env.RL_TOKEN_CAP ?? 30,
     ratelimit_token_add: process.env.RL_TOKEN_ADD ?? 15,
     port: process.env.PORT,

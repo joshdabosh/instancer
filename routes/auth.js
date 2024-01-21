@@ -5,7 +5,7 @@ const { body, validationResult } = require('express-validator')
 
 const router = express.Router()
 
-const ORACLE_URL = 'https://api.angstromctf.com/self'
+const { oracle_url } = require('../config')
 
 router.post('/auth', [body('token').isString()], async (req, res) => {
     // takes a JWT with admin field and verifies it against oracle

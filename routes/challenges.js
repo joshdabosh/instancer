@@ -30,7 +30,11 @@ router.get(
             id: req.params.id,
         })
 
-        res.status(200).json(result)
+        if (result) {
+            res.status(200).json(result)
+        } else {
+            res.status(404).json({})
+        }
     }
 )
 
@@ -104,9 +108,7 @@ router.post(
 
         await challenge.save()
 
-        res.status(201).json({
-            message: 'success',
-        })
+        res.status(201).json(challenge)
     }
 )
 

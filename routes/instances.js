@@ -127,10 +127,7 @@ router.post(
         })
 
         if (runningInstance) {
-            res.status(409).json({
-                message: 'instance_already_running',
-                details: runningInstance,
-            })
+            res.status(409).json(runningInstance)
 
             return
         }
@@ -181,6 +178,8 @@ router.post(
             await k8sManager.makeChallenge(challengeYaml, newInstance.team_id)
 
             await newInstance.save()
+
+            res.status(200).json(newInstance)
         } catch (error) {
             console.error(error)
 
@@ -191,13 +190,6 @@ router.post(
 
             return
         }
-
-        res.status(200).json({
-            message: 'success',
-            details: {
-                instance: challengeYaml.http.hostname,
-            },
-        })
     }
 )
 
