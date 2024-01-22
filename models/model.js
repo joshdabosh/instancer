@@ -136,7 +136,9 @@ class Model {
         if (this.id === undefined || this.id === null) {
             // create new object
             dbObject = (
-                await this.db(this.constructor.tableName).insert(dbObject)
+                await this.db(this.constructor.tableName)
+                    .insert(dbObject)
+                    .returning('*')
             )[0]
 
             Object.assign(this, dbObject)

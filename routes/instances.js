@@ -23,7 +23,7 @@ router.get('/', verifyAdminJwt, async (req, res) => {
 })
 
 router.get(
-    '/:id',
+    '/by_id/:id',
     verifyJwt,
     [param('id').isNumeric()],
     validateResults,
@@ -52,8 +52,39 @@ router.get(
     }
 )
 
+router.get(
+    '/by_challenge/:challenge_id',
+    verifyJwt,
+    [param('challenge_id').isNumeric()],
+    validateResults,
+    async (req, res) => {
+        if (!req.user.team_id) {
+            res.status(403).json({
+                message: 'unauthorized',
+            })
+
+            return
+        }
+
+        const instance = await Instance.findOne({
+            challenge_id: req.params.challenge_id,
+            team_id: req.user.team_id,
+        })
+
+        if (!instance) {
+            res.status(404).json({
+                message: 'instance_not_found',
+            })
+
+            return
+        }
+
+        res.status(200).json(instance)
+    }
+)
+
 router.delete(
-    '/:id',
+    '/by_id/:id',
     verifyJwt,
     [param('id').isNumeric()],
     validateResults,
@@ -79,18 +110,58 @@ router.delete(
             return
         }
 
-        const challenge = await Challenge.findOne({
-            id: instance.challenge_id,
-        })
-
         try {
-            const challengeYaml = yaml.load(challenge.yaml)
-
             await Instance.delete({
                 id: instance.id,
             })
 
-            await k8sManager.deleteChallenge(challengeYaml, req.user.team_id)
+            await k8sManager.deleteChallenge(instance)
+        } catch (error) {
+            console.error(error)
+
+            res.status(500).json({ error })
+
+            return
+        }
+
+        res.status(204).send()
+    }
+)
+
+router.delete(
+    '/by_challenge/:challenge_id',
+    verifyJwt,
+    [param('challenge_id').isNumeric()],
+    validateResults,
+    ratelimitedAuthRequest,
+    async (req, res) => {
+        if (!req.user.team_id) {
+            res.status(403).json({
+                message: 'unauthorized',
+            })
+
+            return
+        }
+
+        const instance = await Instance.findOne({
+            challenge_id: req.params.challenge_id,
+            team_id: req.user.team_id,
+        })
+
+        if (!instance) {
+            res.status(404).json({
+                message: 'instance_not_found',
+            })
+
+            return
+        }
+
+        try {
+            await Instance.delete({
+                id: instance.id,
+            })
+
+            await k8sManager.deleteChallenge(instance)
         } catch (error) {
             console.error(error)
 
@@ -161,10 +232,11 @@ router.post(
         }
 
         // assign fields needed by kubernetes manager
+        const randomBytes = crypto.randomBytes(8).toString('hex')
+        const namespaceName = `instancer-${challengeYaml.name}-${req.user.team_id}-${randomBytes}`
+
         challengeYaml.image_uri = challengeToLaunch.image_uri
-        challengeYaml.http.hostname = `${challengeYaml.name}-${
-            req.user.team_id
-        }-${crypto.randomBytes(8).toString('hex')}.web.actf.co`
+        challengeYaml.http.hostname = `${namespaceName}.web.actf.co`
 
         try {
             // we are deploying a web challenge
@@ -172,10 +244,10 @@ router.post(
                 challenge_id: challengeToLaunch.id,
                 team_id: req.user.team_id,
                 host: challengeYaml.http.hostname,
-                status: 'running',
+                namespace: namespaceName,
             })
 
-            await k8sManager.makeChallenge(challengeYaml, newInstance.team_id)
+            await k8sManager.makeChallenge(challengeYaml, newInstance)
 
             await newInstance.save()
 

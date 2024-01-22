@@ -218,8 +218,8 @@ class K8sManager {
         )
     }
 
-    getNames(challenge, teamId) {
-        const namespaceName = `instancer-${challenge.name}-${teamId}`
+    getNames(instanceDetails) {
+        const namespaceName = instanceDetails.namespace
         const deploymentName = `${namespaceName}-deploy`
         const serviceName = `${namespaceName}-service`
         const ingressName = `${namespaceName}-ingress`
@@ -232,12 +232,12 @@ class K8sManager {
         }
     }
 
-    async makeChallenge(challenge, teamId) {
+    async makeChallenge(challenge, instanceDetails) {
         if (!this.kc) {
             await this.initKubeConfig()
         }
 
-        const instanceNames = this.getNames(challenge, teamId)
+        const instanceNames = this.getNames(instanceDetails)
 
         await this.makeNamespace(instanceNames.namespaceName)
 
@@ -248,14 +248,12 @@ class K8sManager {
         await this.makeIngress(challenge, instanceNames)
     }
 
-    async deleteChallenge(challenge, teamId) {
+    async deleteChallenge(instance) {
         if (!this.kc) {
             await this.initKubeConfig()
         }
 
-        const { namespaceName } = this.getNames(challenge, teamId)
-
-        await this.deleteNamespace(namespaceName)
+        await this.deleteNamespace(instance.namespace)
     }
 }
 

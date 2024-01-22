@@ -18,13 +18,9 @@ class Instance extends Model {
                 valid: (host) => typeof host === 'string',
                 required: true,
             },
-            status: {
-                valid: (status) =>
-                    typeof status === 'string' &&
-                    (status === 'starting' ||
-                        status === 'running' ||
-                        status === 'stopping' ||
-                        status === 'stopped'),
+            namespace: {
+                valid: (namespace) => typeof namespace === 'string',
+                required: true,
             },
         }
     }
@@ -34,7 +30,11 @@ class Instance extends Model {
             .table(this.tableName)
             .where('updated', '<', new Date(time))
 
-        return res.map((i) => new this(i))
+        return res.map((i) => {
+            let x = new this(i)
+            console.log(x)
+            return x
+        })
     }
 }
 

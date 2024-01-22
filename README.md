@@ -195,11 +195,49 @@ Requires admin authentication.
 | -------- | --------------------- | -------------------------------------- |
 | 200      | list of all instances | list containing [instances](#instance) |
 
-### Delete instance 🔒
+### Get an instance by id 🔒
+
+Requires user authentication.
+
+`GET /instances/by_id/:id`
+
+##### Response Body
+
+| **code** | **description** | **content**              |
+| -------- | --------------- | ------------------------ |
+| 200      | an instance     | an [instance](#instance) |
+
+### Get an instance by challenge id 🔒
+
+Requires user authentication. Gets an instance for a challenge belonging to a team.
+
+`GET /instances/by_challenge/:challenge_id`
+
+##### Response Body
+
+| **code** | **description** | **content**              |
+| -------- | --------------- | ------------------------ |
+| 200      | an instance     | an [instance](#instance) |
+
+### Delete instance by id 🔒
 
 Requires user authentication. The user's `team_id` must be the same as the instance's owner team.
 
 `DELETE /instances/:id`
+
+##### Response Body
+
+| **code** | **description**      | **content**                      |
+| -------- | -------------------- | -------------------------------- |
+| 204      | successfully deleted | none                             |
+| 403      | unauthorized         | {"message":"unauthorized"}       |
+| 404      | instance not found   | {"message":"instance_not_found"} |
+
+### Delete instance by challenge id 🔒
+
+Requires user authentication. It will delete a team's instance corresponding to a challenge.
+
+`DELETE /instances/by_challenge/:challenge_id`
 
 ##### Response Body
 

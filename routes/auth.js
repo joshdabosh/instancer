@@ -21,7 +21,7 @@ router.post('/auth', [body('token').isString()], async (req, res) => {
         return
     }
 
-    const authResult = await fetch(ORACLE_URL, {
+    const authResult = await fetch(oracle_url, {
         headers: {
             Authorization: 'Token ' + req.body.token,
         },

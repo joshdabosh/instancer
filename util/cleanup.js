@@ -10,17 +10,11 @@ const { instanceLifetime } = require('../config')
 
 module.exports = async () => {
     const resultObj = await Instance.findStartedBefore(
-        new Date() - instanceLifetime
+        new Date(Date.now() - instanceLifetime * 1000)
     )
 
     for (instance of resultObj) {
-        const challenge = await Challenge.findOne({
-            id: instance.challenge_id,
-        })
-
-        const challengeYaml = yaml.load(challenge.yaml)
-
-        await k8sManager.deleteChallenge(challengeYaml, instance.team_id)
+        await k8sManager.deleteChallenge(instance)
         await Instance.delete({
             id: instance.id,
         })
