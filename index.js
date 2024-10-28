@@ -14,11 +14,6 @@ const INSTANCER_CONFIG = require('./config')
 
 app.use(express.json())
 
-app.use((req, res, next) => {
-    req.jwt_secret = INSTANCER_CONFIG.jwt_secret
-    next()
-})
-
 app.use('/', authRouter)
 app.use('/challenges', challengesRouter)
 app.use('/instances', instancesRouter)

@@ -31,7 +31,7 @@ const verifyJwt = (req, res, next) => {
         return
     }
 
-    const decoded = jwt.verify(values[1], req.jwt_secret)
+    const decoded = jwt.verify(values[1], INSTANCER_CONFIG.jwt_secret)
 
     req.user = decoded
 
@@ -59,7 +59,7 @@ const verifyAdminJwt = (req, res, next) => {
         return
     }
 
-    const decoded = jwt.verify(values[1], req.jwt_secret)
+    const decoded = jwt.verify(values[1], INSTANCER_CONFIG.jwt_secret)
 
     if (!decoded.admin) {
         res.status(403).json({

@@ -1,11 +1,12 @@
 const express = require('express')
 const jwt = require('jsonwebtoken')
+const fetch = require('node-fetch')
 
 const { body, validationResult } = require('express-validator')
 
 const router = express.Router()
 
-const { oracle_url } = require('../config')
+const { oracle_url, jwt_secret } = require('../config')
 
 router.post('/auth', [body('token').isString()], async (req, res) => {
     // takes a JWT with admin field and verifies it against oracle
@@ -45,7 +46,7 @@ router.post('/auth', [body('token').isString()], async (req, res) => {
             team_id: userData.user.team?.id,
             competition_id: userData.competition?.id ?? -1,
         },
-        req.jwt_secret
+        jwt_secret
     )
 
     res.status(200).json({
